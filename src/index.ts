@@ -2,18 +2,17 @@
 import { Command } from "commander";
 import { globalFlags } from "./lib/config.js";
 import { authCommand } from "./commands/auth.js";
+import { toolsResource } from "./resources/tools.js";
 import { subscribersResource } from "./resources/subscribers.js";
 import { campaignsResource } from "./resources/campaigns.js";
 import { workflowsResource } from "./resources/workflows.js";
 import { tagsResource } from "./resources/tags.js";
-import { orgResource } from "./resources/org.js";
-import { toolsResource } from "./resources/tools.js";
 
 const program = new Command();
 
 program
   .name("lumail-cli")
-  .description("CLI for the Lumail email marketing API")
+  .description("CLI for the Lumail API - email marketing platform")
   .version("0.1.0")
   .option("--json", "Output as JSON", false)
   .option("--format <fmt>", "Output format: text, json, csv, yaml", "text")
@@ -30,11 +29,10 @@ program
   });
 
 program.addCommand(authCommand);
+program.addCommand(toolsResource);
 program.addCommand(subscribersResource);
 program.addCommand(campaignsResource);
 program.addCommand(workflowsResource);
 program.addCommand(tagsResource);
-program.addCommand(orgResource);
-program.addCommand(toolsResource);
 
 program.parse();

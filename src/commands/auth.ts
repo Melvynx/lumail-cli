@@ -45,7 +45,7 @@ authCommand
   .addHelpText("after", "\nExample:\n  lumail-cli auth test")
   .action(async () => {
     try {
-      await client.post("/tools/get_org_stats", {});
+      await client.get("/");
       log.success("Token is valid");
     } catch (err) {
       handleError(err);

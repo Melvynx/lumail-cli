@@ -6,85 +6,60 @@ import { handleError } from "../lib/errors.js";
 export const subscribersResource = new Command("subscribers")
   .description("Manage subscribers");
 
-// ── LIST ──────────────────────────────────────────────
+// -- LIST --
 subscribersResource
   .command("list")
   .description("List all subscribers")
-  .option("--limit <n>", "Max results", "20")
-  .option("--page <n>", "Page number", "1")
-  .option("--tag <tag>", "Filter by tag")
   .option("--fields <cols>", "Comma-separated columns to display")
   .option("--json", "Output as JSON")
   .option("--format <fmt>", "Output format: text, json, csv, yaml")
-  .addHelpText("after", "\nExamples:\n  lumail-cli subscribers list\n  lumail-cli subscribers list --tag newsletter --json")
-  .action(async (opts) => {
+  .addHelpText("after", "\nExamples:\n  lumail-cli subscribers list\n  lumail-cli subscribers list --json")
+  .action(async (opts: { json?: boolean; format?: string; fields?: string }) => {
     try {
-      const body: Record<string, unknown> = {};
-      if (opts.limit) body.limit = Number(opts.limit);
-      if (opts.page) body.page = Number(opts.page);
-      if (opts.tag) body.tag = opts.tag;
-      const data = await client.post("/tools/list_subscribers", body);
-      const result = (data as Record<string, unknown>)?.data ?? data;
-      output(result, {
-        json: opts.json,
-        format: opts.format,
-        fields: opts.fields?.split(","),
-      });
+      const data = await client.post("/list_subscribers");
+      const fields = opts.fields?.split(",");
+      output(data, { json: opts.json, format: opts.format, fields });
     } catch (err) {
       handleError(err, opts.json);
     }
   });
 
-// ── GET ───────────────────────────────────────────────
+// -- GET --
 subscribersResource
-  .command("get <email>")
-  .description("Get a subscriber by email")
+  .command("get")
+  .description("Get a specific subscriber by email")
+  .requiredOption("--email <email>", "Subscriber email address")
   .option("--json", "Output as JSON")
   .option("--format <fmt>", "Output format: text, json, csv, yaml")
-  .addHelpText("after", "\nExamples:\n  lumail-cli subscribers get user@example.com\n  lumail-cli subscribers get user@example.com --json")
-  .action(async (email: string, opts) => {
+  .addHelpText("after", '\nExamples:\n  lumail-cli subscribers get --email "test@example.com"')
+  .action(async (opts: { email: string; json?: boolean; format?: string }) => {
     try {
-      const data = await client.post("/tools/get_subscriber", { email });
-      const result = (data as Record<string, unknown>)?.data ?? data;
-      output(result, { json: opts.json, format: opts.format });
+      const data = await client.post("/get_subscriber", { email: opts.email });
+      output(data, { json: opts.json, format: opts.format });
     } catch (err) {
       handleError(err, opts.json);
     }
   });
 
-// ── ADD ──────────────────────────────────────────────
+// -- ADD --
 subscribersResource
   .command("add")
   .description("Add a new subscriber")
-  .requiredOption("--email <email>", "Subscriber email")
+  .requiredOption("--email <email>", "Subscriber email address")
   .option("--name <name>", "Subscriber name")
-  .option("--tags <tags>", "Comma-separated tags")
+  .option("--tags <tags>", "Comma-separated tag names")
   .option("--json", "Output as JSON")
-  .addHelpText("after", '\nExamples:\n  lumail-cli subscribers add --email user@example.com\n  lumail-cli subscribers add --email user@example.com --tags "newsletter,vip" --json')
-  .action(async (opts) => {
+  .addHelpText(
+    "after",
+    '\nExamples:\n  lumail-cli subscribers add --email "test@example.com"\n  lumail-cli subscribers add --email "test@example.com" --name "John" --tags "newsletter,vip"',
+  )
+  .action(async (opts: { email: string; name?: string; tags?: string; json?: boolean }) => {
     try {
       const body: Record<string, unknown> = { email: opts.email };
       if (opts.name) body.name = opts.name;
-      if (opts.tags) body.tags = opts.tags.split(",").map((t: string) => t.trim());
-      const data = await client.post("/tools/add_subscriber", body);
-      const result = (data as Record<string, unknown>)?.data ?? data;
-      output(result, { json: opts.json });
-    } catch (err) {
-      handleError(err, opts.json);
-    }
-  });
-
-// ── DELETE ────────────────────────────────────────────
-subscribersResource
-  .command("delete <email>")
-  .description("Delete a subscriber by email")
-  .option("--json", "Output as JSON")
-  .addHelpText("after", "\nExamples:\n  lumail-cli subscribers delete user@example.com\n  lumail-cli subscribers delete user@example.com --json")
-  .action(async (email: string, opts) => {
-    try {
-      const data = await client.post("/tools/delete_subscriber", { email });
-      const result = (data as Record<string, unknown>)?.data ?? data;
-      output(result ?? { deleted: true, email }, { json: opts.json });
+      if (opts.tags) body.tags = opts.tags.split(",").map((t) => t.trim());
+      const data = await client.post("/add_subscriber", body);
+      output(data, { json: opts.json });
     } catch (err) {
       handleError(err, opts.json);
     }

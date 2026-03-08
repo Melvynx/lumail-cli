@@ -8,7 +8,7 @@ export const APP_NAME = "lumail";
 export const APP_CLI = "lumail-cli";
 
 /** API base URL (replaced during api2cli create) */
-export const BASE_URL = "https://lumail.io/api/v2";
+export const BASE_URL = "https://lumail.io/api/v2/tools";
 
 /** Auth type: bearer | api-key | basic | custom */
 export const AUTH_TYPE = "bearer";

@@ -1,7 +1,7 @@
 {
   "name": "lumail-cli",
   "version": "0.1.0",
-  "description": "CLI for the Lumail email marketing API - manage subscribers, campaigns, workflows, tags, and org stats",
+  "description": "CLI for the lumail API",
   "type": "module",
   "bin": {
     "lumail-cli": "./dist/index.js"
@@ -10,12 +10,6 @@
     "build": "bun build src/index.ts --outfile dist/index.js --target bun",
     "dev": "bun run src/index.ts"
   },
-  "keywords": ["lumail", "email", "marketing", "cli", "api2cli"],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/Melvynx/lumail-cli"
-  },
-  "license": "MIT",
   "dependencies": {
     "commander": "^13.0.0",
     "picocolors": "^1.1.0"
