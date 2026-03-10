@@ -86,11 +86,24 @@ All `--json` output follows: `{"ok": true, "data": {...}}`. Access data directly
 - NO double nesting - it's always `data.<field>`, never `data.data.<field>`
 - Campaign content is TipTap JSON (`data.content`). To extract plain text, traverse `content` nodes recursively and concatenate `text` fields.
 
+## BEFORE any campaign editing - load skills first
+
+ALWAYS run these two commands FIRST before editing any campaign content:
+```bash
+lumail-cli tools run --tool get_skill --params '{"type":"tiptap"}' --json
+lumail-cli tools run --tool get_skill --params '{"type":"editing"}' --json
+```
+
+Available skill types: `editing`, `snippets`, `tiptap`, `templates`, `variables`, `copywriter`
+
+The `tiptap` skill teaches you the TipTap JSON node format (paragraph, heading, button, spacer, image, variable, marks, etc.).
+The `editing` skill teaches you the batch edit operations (replace, insert, append, remove, setSubject, setPreview).
+
 ## Campaign editing best practices
 
 **Prefer `batch_edit_campaign`** for all campaign edits - it's the most token-efficient approach. One API call for multiple changes (replace text, insert content, update subject/preview, etc.).
 
-**Always use TipTap JSON format** when updating campaign content. Lumail uses TipTap as its editor. Use `update_campaign_with_tiptap` for full content rewrites. To learn the TipTap format, call `tools run --tool get_skill --params '{"type":"tiptap"}' --json`.
+**Always use TipTap JSON format** when updating campaign content. Lumail uses TipTap as its editor. Use `update_campaign_with_tiptap` for full content rewrites.
 
 **Use `update_campaign` for metadata-only changes** (name, subject, preview) - no content rewrite needed.
 
