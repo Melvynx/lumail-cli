@@ -65,9 +65,10 @@ async function request(method: Method, path: string, opts: RequestOptions = {}):
     const data = await res.json().catch(() => null);
 
     if (!res.ok) {
+      const d = data as Record<string, unknown> | null;
       const msg =
-        (data as Record<string, unknown>)?.message ??
-        ((data as Record<string, Record<string, unknown>>)?.error?.message as string) ??
+        d?.message ??
+        (typeof d?.error === "string" ? d.error : (d?.error as Record<string, unknown>)?.message) ??
         res.statusText;
       throw new CliError(res.status, `${res.status}: ${String(msg)}`);
     }

@@ -29,10 +29,22 @@ export function output(
   }
 }
 
+function unwrapApiResponse(data: unknown): unknown {
+  if (typeof data === "object" && data !== null && "success" in data) {
+    const { success, ...rest } = data as Record<string, unknown>;
+    if ("data" in rest && Object.keys(rest).length === 1) {
+      return rest.data;
+    }
+    return rest;
+  }
+  return data;
+}
+
 function printJson(data: unknown): void {
-  const envelope: JsonEnvelope = { ok: true, data };
-  if (Array.isArray(data)) {
-    envelope.meta = { total: data.length };
+  const unwrapped = unwrapApiResponse(data);
+  const envelope: JsonEnvelope = { ok: true, data: unwrapped };
+  if (Array.isArray(unwrapped)) {
+    envelope.meta = { total: unwrapped.length };
   }
   console.log(JSON.stringify(envelope, null, 2));
 }

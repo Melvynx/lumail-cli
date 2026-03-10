@@ -9,14 +9,19 @@ export const workflowsResource = new Command("workflows")
 // -- LIST --
 workflowsResource
   .command("list")
-  .description("List all workflows")
+  .description("List workflows")
+  .option("--limit <n>", "Max results to return")
+  .option("--status <status>", "Filter by status (e.g. ACTIVE, PAUSED)")
   .option("--fields <cols>", "Comma-separated columns to display")
   .option("--json", "Output as JSON")
   .option("--format <fmt>", "Output format: text, json, csv, yaml")
-  .addHelpText("after", "\nExamples:\n  lumail-cli workflows list\n  lumail-cli workflows list --json")
-  .action(async (opts: { json?: boolean; format?: string; fields?: string }) => {
+  .addHelpText("after", "\nExamples:\n  lumail-cli workflows list --limit 5\n  lumail-cli workflows list --status ACTIVE --json")
+  .action(async (opts: { limit?: string; status?: string; json?: boolean; format?: string; fields?: string }) => {
     try {
-      const data = await client.post("/list_workflows");
+      const body: Record<string, unknown> = {};
+      if (opts.limit) body.limit = Number(opts.limit);
+      if (opts.status) body.status = opts.status;
+      const data = await client.post("/list_workflows", body);
       const fields = opts.fields?.split(",");
       output(data, { json: opts.json, format: opts.format, fields });
     } catch (err) {
@@ -49,7 +54,7 @@ workflowsResource
   .addHelpText("after", "\nExamples:\n  lumail-cli workflows activate --id abc123")
   .action(async (opts: { id: string; json?: boolean }) => {
     try {
-      const data = await client.post("/activate_workflow", { id: opts.id });
+      const data = await client.post("/activate_workflow", { workflowId: opts.id });
       output(data, { json: opts.json });
     } catch (err) {
       handleError(err, opts.json);

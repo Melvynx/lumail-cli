@@ -9,14 +9,19 @@ export const campaignsResource = new Command("campaigns")
 // -- LIST --
 campaignsResource
   .command("list")
-  .description("List all campaigns")
+  .description("List campaigns")
+  .option("--limit <n>", "Max results to return")
+  .option("--status <status>", "Filter by status (e.g. DRAFT, SENT, SCHEDULED)")
   .option("--fields <cols>", "Comma-separated columns to display")
   .option("--json", "Output as JSON")
   .option("--format <fmt>", "Output format: text, json, csv, yaml")
-  .addHelpText("after", "\nExamples:\n  lumail-cli campaigns list\n  lumail-cli campaigns list --json")
-  .action(async (opts: { json?: boolean; format?: string; fields?: string }) => {
+  .addHelpText("after", "\nExamples:\n  lumail-cli campaigns list --limit 5\n  lumail-cli campaigns list --status SENT --json")
+  .action(async (opts: { limit?: string; status?: string; json?: boolean; format?: string; fields?: string }) => {
     try {
-      const data = await client.post("/list_campaigns");
+      const body: Record<string, unknown> = {};
+      if (opts.limit) body.limit = Number(opts.limit);
+      if (opts.status) body.status = opts.status;
+      const data = await client.post("/list_campaigns", body);
       const fields = opts.fields?.split(",");
       output(data, { json: opts.json, format: opts.format, fields });
     } catch (err) {
@@ -34,7 +39,7 @@ campaignsResource
   .addHelpText("after", "\nExamples:\n  lumail-cli campaigns get --id abc123")
   .action(async (opts: { id: string; json?: boolean; format?: string }) => {
     try {
-      const data = await client.post("/get_campaign", { id: opts.id });
+      const data = await client.post("/get_campaign", { campaignId: opts.id });
       output(data, { json: opts.json, format: opts.format });
     } catch (err) {
       handleError(err, opts.json);
@@ -75,7 +80,7 @@ campaignsResource
   .addHelpText("after", "\nExamples:\n  lumail-cli campaigns send --id abc123")
   .action(async (opts: { id: string; json?: boolean }) => {
     try {
-      const data = await client.post("/send_campaign", { id: opts.id });
+      const data = await client.post("/send_campaign", { campaignId: opts.id });
       output(data, { json: opts.json });
     } catch (err) {
       handleError(err, opts.json);

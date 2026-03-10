@@ -9,14 +9,23 @@ export const subscribersResource = new Command("subscribers")
 // -- LIST --
 subscribersResource
   .command("list")
-  .description("List all subscribers")
+  .description("List subscribers")
+  .option("--limit <n>", "Max results to return")
+  .option("--status <status>", "Filter by status (e.g. ACTIVE, BOUNCED, UNSUBSCRIBED)")
+  .option("--query <q>", "Search by email or name")
+  .option("--tag <tag>", "Filter by tag name")
   .option("--fields <cols>", "Comma-separated columns to display")
   .option("--json", "Output as JSON")
   .option("--format <fmt>", "Output format: text, json, csv, yaml")
-  .addHelpText("after", "\nExamples:\n  lumail-cli subscribers list\n  lumail-cli subscribers list --json")
-  .action(async (opts: { json?: boolean; format?: string; fields?: string }) => {
+  .addHelpText("after", "\nExamples:\n  lumail-cli subscribers list --limit 10\n  lumail-cli subscribers list --status BOUNCED --json\n  lumail-cli subscribers list --tag vip")
+  .action(async (opts: { limit?: string; status?: string; query?: string; tag?: string; json?: boolean; format?: string; fields?: string }) => {
     try {
-      const data = await client.post("/list_subscribers");
+      const body: Record<string, unknown> = {};
+      if (opts.limit) body.limit = Number(opts.limit);
+      if (opts.status) body.status = opts.status;
+      if (opts.query) body.query = opts.query;
+      if (opts.tag) body.tag = opts.tag;
+      const data = await client.post("/list_subscribers", body);
       const fields = opts.fields?.split(",");
       output(data, { json: opts.json, format: opts.format, fields });
     } catch (err) {
