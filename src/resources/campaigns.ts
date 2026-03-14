@@ -71,6 +71,40 @@ campaignsResource
     }
   });
 
+// -- EDIT --
+campaignsResource
+  .command("edit")
+  .description("Edit a campaign (name, subject, preview, content, or surgical operations)")
+  .requiredOption("--id <id>", "Campaign ID")
+  .option("--name <name>", "New campaign name")
+  .option("--subject <subject>", "New email subject line")
+  .option("--preview <preview>", "New preview/preheader text")
+  .option("--content <json>", "Full TipTap JSON content (for complete rewrites)")
+  .option("--operations <json>", "JSON array of surgical edit operations")
+  .option("--json", "Output as JSON")
+  .addHelpText(
+    "after",
+    `\nExamples:
+  lumail-cli campaigns edit --id cmp_xxx --subject "New subject" --json
+  lumail-cli campaigns edit --id cmp_xxx --name "Renamed" --preview "Preview text" --json
+  lumail-cli campaigns edit --id cmp_xxx --operations '[{"op":"replace_text","search":"old","replace":"new","all":true}]' --json
+  lumail-cli campaigns edit --id cmp_xxx --content '{"type":"doc","content":[...]}' --json`,
+  )
+  .action(async (opts: { id: string; name?: string; subject?: string; preview?: string; content?: string; operations?: string; json?: boolean }) => {
+    try {
+      const body: Record<string, unknown> = { id: opts.id };
+      if (opts.name) body.name = opts.name;
+      if (opts.subject) body.subject = opts.subject;
+      if (opts.preview !== undefined) body.preview = opts.preview;
+      if (opts.content) body.content = JSON.parse(opts.content);
+      if (opts.operations) body.operations = JSON.parse(opts.operations);
+      const data = await client.post("/edit_campaign", body);
+      output(data, { json: opts.json });
+    } catch (err) {
+      handleError(err, opts.json);
+    }
+  });
+
 // -- SEND --
 campaignsResource
   .command("send")

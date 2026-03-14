@@ -51,6 +51,9 @@ lumail-cli auth test
 | `lumail-cli campaigns list --fields id,name,status --json` | Select specific columns |
 | `lumail-cli campaigns get --id <campaignId> --json` | Get campaign by ID (includes full content) |
 | `lumail-cli campaigns create --name "Newsletter" --subject "Update" --content "<h1>Hello</h1>" --json` | Create campaign |
+| `lumail-cli campaigns edit --id <campaignId> --subject "New subject" --json` | Edit campaign metadata |
+| `lumail-cli campaigns edit --id <campaignId> --operations '[{"op":"replace_text","search":"old","replace":"new"}]' --json` | Surgical edit via operations |
+| `lumail-cli campaigns edit --id <campaignId> --content '{"type":"doc","content":[...]}' --json` | Full content rewrite |
 | `lumail-cli campaigns send --id <campaignId> --json` | Send a campaign |
 
 ### workflows
@@ -86,34 +89,26 @@ All `--json` output follows: `{"ok": true, "data": {...}}`. Access data directly
 - NO double nesting - it's always `data.<field>`, never `data.data.<field>`
 - Campaign content is TipTap JSON (`data.content`). To extract plain text, traverse `content` nodes recursively and concatenate `text` fields.
 
-## BEFORE any campaign editing - load skills first
-
-ALWAYS run these two commands FIRST before editing any campaign content:
-```bash
-lumail-cli tools run --tool get_skill --params '{"type":"tiptap"}' --json
-lumail-cli tools run --tool get_skill --params '{"type":"editing"}' --json
-```
-
-Available skill types: `editing`, `snippets`, `tiptap`, `templates`, `variables`, `copywriter`
-
-The `tiptap` skill teaches you the TipTap JSON node format (paragraph, heading, button, spacer, image, variable, marks, etc.).
-The `editing` skill teaches you the batch edit operations (replace, insert, append, remove, setSubject, setPreview).
-
 ## Campaign editing best practices
 
-**Prefer `batch_edit_campaign`** for all campaign edits - it's the most token-efficient approach. One API call for multiple changes (replace text, insert content, update subject/preview, etc.).
+**Use `edit_campaign` for ALL campaign modifications** - it's the ONLY tool for editing campaigns. Two modes:
 
-**Always use TipTap JSON format** when updating campaign content. Lumail uses TipTap as its editor. Use `update_campaign_with_tiptap` for full content rewrites.
+**Direct mode** (metadata or full content rewrite):
+- Set name, subject, preview, and/or content (full TipTap JSON)
+- `campaigns edit --id <id> --subject "New subject" --preview "Preview" --json`
+- `campaigns edit --id <id> --content '{"type":"doc","content":[...]}' --json`
 
-**Use `update_campaign` for metadata-only changes** (name, subject, preview) - no content rewrite needed.
+**Operations mode** (surgical edits, saves tokens):
+- Pass an operations array for targeted changes WITHOUT rewriting full content
+- `campaigns edit --id <id> --operations '[{"op":"replace_text","search":"old","replace":"new","all":true}]' --json`
+- Available operations: `replace_text`, `insert_node`, `append_node`, `prepend_node`, `remove_node`, `replace_node`
+- Can combine metadata fields (name, subject, preview) with operations in a single call
 
-**Full rewrite flow**:
-1. Get current content: `campaigns get --id <id> --json`
-2. Rewrite with TipTap: `tools run --tool update_campaign_with_tiptap --params '{"id":"<id>","content":{...},"subject":"...","preview":"..."}' --json`
+**DO NOT** provide both `--content` and `--operations` at the same time.
 
-**Partial edit flow** (preferred):
-1. Use `tools run --tool batch_edit_campaign --params '{"campaignId":"<id>","operations":[{"type":"replace","searchText":"old","replaceText":"new"},{"type":"setSubject","value":"New subject"}]}' --json`
-2. Supported operations: replace, insert, insertAfter, append, prepend, remove, setSubject, setPreview
+**TipTap format**: The `edit_campaign` tool description contains the full TipTap node reference inline - no need to load skills first.
+
+Available skill types (via `get_skill`): `snippets`, `templates`, `variables`, `copywriter`
 
 **Writing style**: ALWAYS call `tools run --tool get_writing_style --json` BEFORE writing/updating any email content to match the user's voice and tone.
 
@@ -127,7 +122,7 @@ The `editing` skill teaches you the batch edit operations (replace, insert, appe
 2. `tools run --tool create_workflow_step --params '{"workflowId":"wf_xxx","type":"TRIGGER"}' --json`
 3. `tools run --tool update_workflow_step --params '{"stepId":"step_xxx","type":"TRIGGER","tags":["tag-name"]}' --json`
 4. `tools run --tool create_workflow_step --params '{"workflowId":"wf_xxx","type":"EMAIL"}' --json` - returns stepId AND campaignId
-5. Use the campaignId (NOT stepId) to update email content via `update_campaign_with_tiptap`
+5. Use the campaignId (NOT stepId) to update email content via `edit_campaign`
 6. `tools run --tool activate_workflow --params '{"workflowId":"wf_xxx"}' --json`
 
 Steps execute in order (position 1, 2, 3...). Types: TRIGGER, EMAIL, WAIT, WEBHOOK, ACTION.
@@ -163,18 +158,9 @@ For features not exposed as direct CLI resources, use `tools run`. Below are the
 | `tools run --tool get_campaign_analytics --params '{"campaignId":"cmp_xxx"}' --json` | Get campaign analytics (opens, clicks, bounces) |
 | `tools run --tool get_campaign_progress --params '{"campaignId":"cmp_xxx"}' --json` | Get sending progress |
 | `tools run --tool duplicate_campaign --params '{"campaignId":"cmp_xxx","newName":"Copy"}' --json` | Duplicate campaign |
-| `tools run --tool update_campaign --params '{"id":"cmp_xxx","subject":"New subject"}' --json` | Update campaign metadata (name, subject, preview) |
-| `tools run --tool get_deliverability_score --params '{"campaignId":"cmp_xxx"}' --json` | Check deliverability score |
+| `tools run --tool edit_campaign --params '{"id":"cmp_xxx","subject":"New subject"}' --json` | Edit campaign (metadata, content, or operations) |
 | `tools run --tool update_campaign_filters --params '{"campaignId":"cmp_xxx","filters":{}}' --json` | Update campaign audience filters |
 | `tools run --tool get_available_filters --json` | List available filter types |
-
-### Campaign content editing
-
-| Command | Description |
-|---------|-------------|
-| `tools run --tool batch_edit_campaign --params '{"campaignId":"cmp_xxx","operations":[...]}' --json` | Batch edit campaign (preferred - one call for multiple changes) |
-| `tools run --tool update_campaign_with_tiptap --params '{"id":"cmp_xxx","content":{...}}' --json` | Full content rewrite with TipTap JSON |
-| `tools run --tool replace_content_in_campaign --params '{"campaignId":"cmp_xxx","searchText":"old","replaceText":"new","replaceAll":true}' --json` | Find and replace in campaign |
 
 ### Workflows (advanced)
 
